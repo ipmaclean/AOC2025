@@ -44,8 +44,12 @@ public class Day02 {
         System.out.printf("The solution to part one is %s.%n", solution);
     }
 
-    private static void solvePartTwo() {
+    private static void solvePartTwo() throws IOException {
         long solution = 0;
+        List<Range> ranges = getRanges();
+        for (Range range : ranges)  {
+            solution += range.sumInvalidIdsPartTwo();
+        }
         System.out.printf("The solution to part two is %s.%n", solution);
     }
 }

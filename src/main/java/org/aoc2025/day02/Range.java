@@ -2,6 +2,12 @@ package org.aoc2025.day02;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.aoc2025.utils.Utils.getFactors;
+
 public class Range {
     private final long lower;
     private final long upper;
@@ -13,6 +19,10 @@ public class Range {
     }
 
     public long sumInvalidIds() {
+        // I tried to be too clever by half here.
+        // Way too much pre-optimisation that did
+        // not help with part two at all! Always
+        // try just brute forcing it first.
         long minRepeaters = minRepeatingDigits();
         long maxRepeaters = maxRepeatingDigits();
 
@@ -24,6 +34,26 @@ public class Range {
             sum += i * (Long.parseLong(StringUtils.rightPad("1", Long.toString(i).length() + 1, "0")) + 1);
         }
         return sum;
+    }
+
+    public long sumInvalidIdsPartTwo() {
+        long solution = 0;
+        for (long i = lower; i <= upper; i++) {
+            long digitCount = Long.toString(i).length();
+            Set<Long> factors = getFactors(digitCount);
+            factors.remove(1L);
+
+            for (long factor : factors) {
+                String regex = String.format("(\\d{%d})\\1{%d}", digitCount / factor, factor - 1);
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(Long.toString(i));
+                if (matcher.matches()) {
+                    solution += i;
+                    break;
+                }
+            }
+        }
+        return solution;
     }
 
     private long minRepeatingDigits() {
