@@ -1,7 +1,5 @@
 package org.aoc2025.day03;
 
-import org.aoc2025.utils.Tuple;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,29 +37,34 @@ public class Day03 {
         long solution = 0;
         List<String> batteries = getBatteries();
         for (String battery : batteries) {
-            Tuple<Integer, Integer> maxJoltageAndIndexFirstDigit = getMaxFromRight(battery.length() - 2, 0, battery);
-            Tuple<Integer, Integer> maxJoltageAndIndexSecondDigit = getMaxFromRight(battery.length() - 1, maxJoltageAndIndexFirstDigit.y() + 1, battery);
-            solution +=  Integer.parseInt(maxJoltageAndIndexFirstDigit.x().toString() + maxJoltageAndIndexSecondDigit.x().toString());
+            solution += Long.parseLong(getMaxFromRight(2, 0, battery, ""));
         }
         System.out.printf("The solution to part one is %s.%n", solution);
     }
 
     private static void solvePartTwo() throws IOException {
         long solution = 0;
+        List<String> batteries = getBatteries();
+        for (String battery : batteries) {
+            solution += Long.parseLong(getMaxFromRight(12, 0, battery, ""));
+        }
         System.out.printf("The solution to part two is %s.%n", solution);
     }
 
-    private static Tuple<Integer, Integer> getMaxFromRight(int startIndex, int endIndex, String battery) {
+    private static String getMaxFromRight(int depth, int endIndex, String battery, String currentSolution) {
         int maxJoltage = Integer.MIN_VALUE;
         int maxIndex = Integer.MIN_VALUE;
-
-        for (int i = startIndex; i >= endIndex; i--) {
+        for (int i = battery.length() - depth; i >= endIndex; i--) {
             int joltage = Character.getNumericValue(battery.charAt(i));
             if (joltage >= maxJoltage) {
                 maxJoltage = joltage;
                 maxIndex = i;
             }
         }
-        return new Tuple<>(maxJoltage, maxIndex);
+        currentSolution += Integer.toString(maxJoltage);
+        if (depth <= 1) {
+            return currentSolution;
+        }
+        return getMaxFromRight(depth - 1, maxIndex + 1, battery, currentSolution);
     }
 }
