@@ -52,7 +52,7 @@ public class Day04 {
         List<String> map = getMap();
         for (int y = 0; y < map.size(); y++) {
             for (int x = 0; x < map.get(y).length(); x++) {
-                if (map.get(y).charAt(x) == '@' && isAccessible(map, x, y)) {
+                if (map.get(y).charAt(x) == '@' && isAccessible(map, x, y, null)) {
                     solution++;
                 }
             }
@@ -69,8 +69,8 @@ public class Day04 {
             toBeRemovedPaper = new HashSet<>();
             for (int y = 0; y < map.size(); y++) {
                 for (int x = 0; x < map.get(y).length(); x++) {
-                    Point coord = new Point(x,y);
-                    if (map.get(y).charAt(x) == '@' && !removedPaper.contains(coord) && isAccessiblePartTwo(map, x, y, removedPaper)) {
+                    Point coord = new Point(x, y);
+                    if (map.get(y).charAt(x) == '@' && !removedPaper.contains(coord) && isAccessible(map, x, y, removedPaper)) {
                         toBeRemovedPaper.add(coord);
                     }
                 }
@@ -80,26 +80,13 @@ public class Day04 {
         System.out.printf("The solution to part two is %s.%n", removedPaper.size());
     }
 
-    private static boolean isAccessible(List<String> map, int x, int y) {
+    private static boolean isAccessible(List<String> map, int x, int y, Set<Point> removedPaper) {
         int adjacentPaperCount = 0;
         for (Point direction : directions) {
             if (x + direction.x < 0 || x + direction.x >= map.get(y).length() || y + direction.y < 0 || y + direction.y >= map.size()) {
                 continue;
             }
-            if (map.get(y + direction.y).charAt(x + direction.x) == '@') {
-                adjacentPaperCount++;
-            }
-        }
-        return adjacentPaperCount < 4;
-    }
-
-    private static boolean isAccessiblePartTwo(List<String> map, int x, int y, Set<Point> removedPaper) {
-        int adjacentPaperCount = 0;
-        for (Point direction : directions) {
-            if (x + direction.x < 0 || x + direction.x >= map.get(y).length() || y + direction.y < 0 || y + direction.y >= map.size()) {
-                continue;
-            }
-            if (map.get(y + direction.y).charAt(x + direction.x) == '@' && !removedPaper.contains(new Point(x + direction.x, y + direction.y))) {
+            if (map.get(y + direction.y).charAt(x + direction.x) == '@' && (removedPaper == null || !removedPaper.contains(new Point(x + direction.x, y + direction.y)))) {
                 adjacentPaperCount++;
             }
         }
