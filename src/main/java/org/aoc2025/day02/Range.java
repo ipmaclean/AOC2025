@@ -2,11 +2,8 @@ package org.aoc2025.day02;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.aoc2025.utils.Utils.getFactors;
 
 public class Range {
     private final long lower;
@@ -39,18 +36,10 @@ public class Range {
     public long sumInvalidIdsPartTwo() {
         long solution = 0;
         for (long i = lower; i <= upper; i++) {
-            long digitCount = Long.toString(i).length();
-            Set<Long> factors = getFactors(digitCount);
-            factors.remove(1L);
-
-            for (long factor : factors) {
-                String regex = String.format("(\\d{%d})\\1{%d}", digitCount / factor, factor - 1);
-                Pattern pattern = Pattern.compile(regex);
-                Matcher matcher = pattern.matcher(Long.toString(i));
-                if (matcher.matches()) {
-                    solution += i;
-                    break;
-                }
+            Pattern pattern = Pattern.compile("^(\\d+)\\1+$");
+            Matcher matcher = pattern.matcher(Long.toString(i));
+            if (matcher.matches()) {
+                solution += i;
             }
         }
         return solution;
@@ -60,14 +49,13 @@ public class Range {
         String lowerAsString = Long.toString(lower);
         long lowerDigitCount = lowerAsString.length();
         if (lowerDigitCount % 2 != 0) {
-            return Long.parseLong(StringUtils.rightPad("1", ((int)lowerDigitCount + 1) / 2, "0"));
+            return Long.parseLong(StringUtils.rightPad("1", ((int) lowerDigitCount + 1) / 2, "0"));
         }
-        long firstHalf = Long.parseLong(lowerAsString.substring(0, (int)lowerDigitCount / 2));
-        long secondHalf = Long.parseLong(lowerAsString.substring((int)lowerDigitCount / 2));
+        long firstHalf = Long.parseLong(lowerAsString.substring(0, (int) lowerDigitCount / 2));
+        long secondHalf = Long.parseLong(lowerAsString.substring((int) lowerDigitCount / 2));
         if (firstHalf < secondHalf) {
             return firstHalf + 1;
-        }
-        else {
+        } else {
             return firstHalf;
         }
     }
@@ -77,14 +65,13 @@ public class Range {
         long upperDigitCount = upperAsString.length();
 
         if (upperDigitCount % 2 != 0) {
-            return Long.parseLong(StringUtils.rightPad("", ((int)upperDigitCount - 1) / 2, "9"));
+            return Long.parseLong(StringUtils.rightPad("", ((int) upperDigitCount - 1) / 2, "9"));
         }
-        long firstHalf = Long.parseLong(upperAsString.substring(0, (int)upperDigitCount / 2));
-        long secondHalf = Long.parseLong(upperAsString.substring((int)upperDigitCount / 2));
+        long firstHalf = Long.parseLong(upperAsString.substring(0, (int) upperDigitCount / 2));
+        long secondHalf = Long.parseLong(upperAsString.substring((int) upperDigitCount / 2));
         if (firstHalf <= secondHalf) {
             return firstHalf;
-        }
-        else {
+        } else {
             return firstHalf - 1;
         }
     }
