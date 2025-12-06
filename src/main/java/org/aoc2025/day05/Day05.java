@@ -1,7 +1,7 @@
 package org.aoc2025.day05;
 
 import org.aoc2025.utils.PointLong;
-import org.aoc2025.utils.Tuple;
+import org.aoc2025.utils.tuple.Tuple2;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +23,7 @@ public class Day05 {
         solvePartTwo();
     }
 
-    private static Tuple<List<PointLong>, List<Long>> getInput() throws IOException {
+    private static Tuple2<List<PointLong>, List<Long>> getInput() throws IOException {
         InputStream inputStream = Day05.class.getClassLoader().getResourceAsStream(INPUT_FILE_NAME);
         List<PointLong> freshRanges = new ArrayList<>();
         List<Long> ingredients = new ArrayList<>();
@@ -39,12 +39,12 @@ public class Day05 {
                 ingredients.add(Long.parseLong(line));
             }
         }
-        return new Tuple<>(freshRanges, ingredients);
+        return new Tuple2<>(freshRanges, ingredients);
     }
 
     private static void solvePartOne() throws IOException {
         long solution = 0;
-        Tuple<List<PointLong>, List<Long>> input = getInput();
+        Tuple2<List<PointLong>, List<Long>> input = getInput();
         List<PointLong> freshRanges = input.x();
         List<Long> ingredients = input.y();
         for (long ingredient : ingredients) {
@@ -56,21 +56,18 @@ public class Day05 {
     }
 
     private static void solvePartTwo() throws IOException {
-        Tuple<List<PointLong>, List<Long>> input = getInput();
+        Tuple2<List<PointLong>, List<Long>> input = getInput();
         List<PointLong> freshRanges = input.x();
         List<PointLong> oldFreshRanges;
-        // Some messy removals while incrementing, but it's in a do while loop anyway
+        // Some messy removals/additions while incrementing, but it's in a do while loop anyway
         do {
             oldFreshRanges = new ArrayList<>(freshRanges);
             for (int i = 0; i < freshRanges.size() - 1; i++) {
                 for (int j = i + 1; j < freshRanges.size(); j++) {
-                    var iRange = freshRanges.get(i);
-                    var jRange = freshRanges.get(j);
-                    // If two ranges overlap, merge the ranges and start again
-                    if ((iRange.x() >= jRange.x() && iRange.x() <= jRange.y())
-                            || (iRange.y() >= jRange.x() && iRange.y() <= jRange.y())
-                            || (iRange.x() < jRange.x() && iRange.y() > jRange.y())
-                            || (iRange.x() > jRange.x() && iRange.y() < jRange.y())) {
+                    PointLong iRange = freshRanges.get(i);
+                    PointLong jRange = freshRanges.get(j);
+                    // If two ranges overlap, merge the ranges
+                    if (rangesOverlap(iRange, jRange)) {
                         PointLong newFreshRange = new PointLong(Math.min(iRange.x(), jRange.x()), Math.max(iRange.y(), jRange.y()));
                         freshRanges.remove(j);
                         freshRanges.remove(i);
@@ -85,5 +82,12 @@ public class Day05 {
             solution += freshRange.y() - freshRange.x() + 1;
         }
         System.out.printf("The solution to part two is %s.%n", solution);
+    }
+
+    private static boolean rangesOverlap(PointLong a, PointLong b) {
+        return (a.x() >= b.x() && a.x() <= b.y())
+                || (a.y() >= b.x() && a.y() <= b.y())
+                || (a.x() < b.x() && a.y() > b.y())
+                || (a.x() > b.x() && a.y() < b.y());
     }
 }
