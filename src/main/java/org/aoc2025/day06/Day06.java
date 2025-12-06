@@ -1,6 +1,6 @@
 package org.aoc2025.day06;
 
-import org.aoc2025.utils.Tuple;
+import org.aoc2025.utils.tuple.Tuple3;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static java.util.Comparator.comparing;
 
 public class Day06 {
 
@@ -23,7 +25,7 @@ public class Day06 {
         solvePartTwo();
     }
 
-    private static Tuple<List<long[]>, char[]> getInput() throws IOException {
+    private static Tuple3<List<long[]>, char[], List<String>> getInput() throws IOException {
         InputStream inputStream = Day06.class.getClassLoader().getResourceAsStream(INPUT_FILE_NAME);
         List<String> input = new ArrayList<>();
 
@@ -44,12 +46,12 @@ public class Day06 {
             );
         }
         char[] operators = input.getLast().replaceAll("\\s+", "").toCharArray();
-        return new Tuple<>(problems, operators);
+        return new Tuple3<>(problems, operators, input);
     }
 
     private static void solvePartOne() throws IOException {
         long solution = 0;
-        Tuple<List<long[]>, char[]> input = getInput();
+        Tuple3<List<long[]>, char[], List<String>> input = getInput();
         List<long[]> problems = input.x();
         char[] operators = input.y();
         for (int i = 0; i < problems.getFirst().length; i++) {
@@ -57,8 +59,10 @@ public class Day06 {
             for (int j = 1; j < problems.size(); j++) {
                 if (operators[i] == '*') {
                     problemSolution *= problems.get(j)[i];
-                } else {
+                } else if (operators[i] == '+') {
                     problemSolution += problems.get(j)[i];
+                } else {
+                    throw new IllegalStateException("Operator must be * or +");
                 }
             }
             solution += problemSolution;
@@ -68,6 +72,45 @@ public class Day06 {
 
     private static void solvePartTwo() throws IOException {
         long solution = 0;
+        Tuple3<List<long[]>, char[], List<String>> inputTuple = getInput();
+        List<String> input = inputTuple.z();
+        char[] operators = inputTuple.y();
+
+        int operatorCounter = 0;
+        char operator = operators[operatorCounter];
+        long problemSolution = operator == '*' ? 1L : 0L;
+        // The input strings are not all the same length
+        int maxInputLineLength = input.stream().max(comparing(String::length)).get().length();
+        for (int i = 0; i <= maxInputLineLength; i++) {
+            Long nextValue = getVerticalLong(input, i);
+            if (nextValue == null) {
+                solution += problemSolution;
+                operatorCounter++;
+                operator = operatorCounter < operators.length ? operators[operatorCounter] : '#'; // # means we've reached the end - it won't be applied
+                problemSolution = operator == '*' ? 1L : 0L;
+            } else {
+                if (operator == '*') {
+                    problemSolution *= nextValue;
+                } else if (operator == '+') {
+                    problemSolution += nextValue;
+                } else {
+                    throw new IllegalStateException("Operator must be * or +");
+                }
+            }
+        }
         System.out.printf("The solution to part two is %s.%n", solution);
+    }
+
+    private static Long getVerticalLong(List<String> input, int index) {
+        // Return the vertical value or null if it's
+        // an empty column or the end of the input
+        StringBuilder valueSb = new StringBuilder();
+        for (int i = 0; i < input.size() - 1; i++) {
+            if (index < input.get(i).length()) {
+                valueSb.append(input.get(i).charAt(index));
+            }
+        }
+        String valueAsString = valueSb.toString().replaceAll("\\s+", "");
+        return valueAsString.isEmpty() ? null : Long.parseLong(valueAsString);
     }
 }

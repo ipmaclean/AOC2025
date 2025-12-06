@@ -1,7 +1,7 @@
 package org.aoc2025.day05;
 
 import org.aoc2025.utils.PointLong;
-import org.aoc2025.utils.Tuple;
+import org.aoc2025.utils.tuple.Tuple2;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +23,7 @@ public class Day05 {
         solvePartTwo();
     }
 
-    private static Tuple<List<PointLong>, List<Long>> getInput() throws IOException {
+    private static Tuple2<List<PointLong>, List<Long>> getInput() throws IOException {
         InputStream inputStream = Day05.class.getClassLoader().getResourceAsStream(INPUT_FILE_NAME);
         List<PointLong> freshRanges = new ArrayList<>();
         List<Long> ingredients = new ArrayList<>();
@@ -39,12 +39,12 @@ public class Day05 {
                 ingredients.add(Long.parseLong(line));
             }
         }
-        return new Tuple<>(freshRanges, ingredients);
+        return new Tuple2<>(freshRanges, ingredients);
     }
 
     private static void solvePartOne() throws IOException {
         long solution = 0;
-        Tuple<List<PointLong>, List<Long>> input = getInput();
+        Tuple2<List<PointLong>, List<Long>> input = getInput();
         List<PointLong> freshRanges = input.x();
         List<Long> ingredients = input.y();
         for (long ingredient : ingredients) {
@@ -56,7 +56,7 @@ public class Day05 {
     }
 
     private static void solvePartTwo() throws IOException {
-        Tuple<List<PointLong>, List<Long>> input = getInput();
+        Tuple2<List<PointLong>, List<Long>> input = getInput();
         List<PointLong> freshRanges = input.x();
         List<PointLong> oldFreshRanges;
         // Some messy removals while incrementing, but it's in a do while loop anyway
