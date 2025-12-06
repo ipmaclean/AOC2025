@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.util.Comparator.comparing;
-
 public class Day06 {
 
     private static final String INPUT_FILE_NAME = "day06/input.txt";
@@ -57,13 +55,7 @@ public class Day06 {
         for (int i = 0; i < problems.getFirst().length; i++) {
             long problemSolution = problems.getFirst()[i];
             for (int j = 1; j < problems.size(); j++) {
-                if (operators[i] == '*') {
-                    problemSolution *= problems.get(j)[i];
-                } else if (operators[i] == '+') {
-                    problemSolution += problems.get(j)[i];
-                } else {
-                    throw new IllegalStateException("Operator must be * or +");
-                }
+                problemSolution = applyOperator(operators[i], problemSolution, problems.get(j)[i]);
             }
             solution += problemSolution;
         }
@@ -80,7 +72,10 @@ public class Day06 {
         char operator = operators[operatorCounter];
         long problemSolution = operator == '*' ? 1L : 0L;
         // The input strings are not all the same length
-        int maxInputLineLength = input.stream().max(comparing(String::length)).get().length();
+        if (input.isEmpty()) {
+            throw new IllegalStateException("Puzzle input is empty.");
+        }
+        int maxInputLineLength = input.stream().mapToInt(String::length).max().getAsInt();
         for (int i = 0; i <= maxInputLineLength; i++) {
             Long nextValue = getVerticalLong(input, i);
             if (nextValue == null) {
@@ -89,13 +84,7 @@ public class Day06 {
                 operator = operatorCounter < operators.length ? operators[operatorCounter] : '#'; // # means we've reached the end - it won't be applied
                 problemSolution = operator == '*' ? 1L : 0L;
             } else {
-                if (operator == '*') {
-                    problemSolution *= nextValue;
-                } else if (operator == '+') {
-                    problemSolution += nextValue;
-                } else {
-                    throw new IllegalStateException("Operator must be * or +");
-                }
+                problemSolution = applyOperator(operator, problemSolution, nextValue);
             }
         }
         System.out.printf("The solution to part two is %s.%n", solution);
@@ -112,5 +101,15 @@ public class Day06 {
         }
         String valueAsString = valueSb.toString().replaceAll("\\s+", "");
         return valueAsString.isEmpty() ? null : Long.parseLong(valueAsString);
+    }
+
+    private static long applyOperator(char operator, long currentProblemSolution, long nextValue) {
+        if (operator == '*') {
+            return currentProblemSolution * nextValue;
+        } else if (operator == '+') {
+            return currentProblemSolution + nextValue;
+        } else {
+            throw new IllegalStateException("Operator must be * or +");
+        }
     }
 }

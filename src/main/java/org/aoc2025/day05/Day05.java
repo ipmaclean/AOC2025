@@ -59,18 +59,15 @@ public class Day05 {
         Tuple2<List<PointLong>, List<Long>> input = getInput();
         List<PointLong> freshRanges = input.x();
         List<PointLong> oldFreshRanges;
-        // Some messy removals while incrementing, but it's in a do while loop anyway
+        // Some messy removals/additions while incrementing, but it's in a do while loop anyway
         do {
             oldFreshRanges = new ArrayList<>(freshRanges);
             for (int i = 0; i < freshRanges.size() - 1; i++) {
                 for (int j = i + 1; j < freshRanges.size(); j++) {
-                    var iRange = freshRanges.get(i);
-                    var jRange = freshRanges.get(j);
-                    // If two ranges overlap, merge the ranges and start again
-                    if ((iRange.x() >= jRange.x() && iRange.x() <= jRange.y())
-                            || (iRange.y() >= jRange.x() && iRange.y() <= jRange.y())
-                            || (iRange.x() < jRange.x() && iRange.y() > jRange.y())
-                            || (iRange.x() > jRange.x() && iRange.y() < jRange.y())) {
+                    PointLong iRange = freshRanges.get(i);
+                    PointLong jRange = freshRanges.get(j);
+                    // If two ranges overlap, merge the ranges
+                    if (rangesOverlap(iRange, jRange)) {
                         PointLong newFreshRange = new PointLong(Math.min(iRange.x(), jRange.x()), Math.max(iRange.y(), jRange.y()));
                         freshRanges.remove(j);
                         freshRanges.remove(i);
@@ -85,5 +82,12 @@ public class Day05 {
             solution += freshRange.y() - freshRange.x() + 1;
         }
         System.out.printf("The solution to part two is %s.%n", solution);
+    }
+
+    private static boolean rangesOverlap(PointLong a, PointLong b) {
+        return (a.x() >= b.x() && a.x() <= b.y())
+                || (a.y() >= b.x() && a.y() <= b.y())
+                || (a.x() < b.x() && a.y() > b.y())
+                || (a.x() > b.x() && a.y() < b.y());
     }
 }
