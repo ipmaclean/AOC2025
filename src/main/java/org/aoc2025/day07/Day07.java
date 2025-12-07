@@ -8,9 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 public class Day07 {
 
@@ -25,10 +23,10 @@ public class Day07 {
         solvePartTwo();
     }
 
-    private static Tuple2<PointLong, HashMap<PointLong, Boolean>> getInput() throws IOException {
+    private static Tuple2<PointLong, Set<PointLong>> getInput() throws IOException {
         InputStream inputStream = Day07.class.getClassLoader().getResourceAsStream(INPUT_FILE_NAME);
         PointLong startPoint = new PointLong(-1, -1);
-        HashMap<PointLong, Boolean> splitters = new HashMap<>();
+        Set<PointLong> splitters = new HashSet<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
             String line;
@@ -38,7 +36,7 @@ public class Day07 {
                     if (line.charAt((int) x) == 'S') {
                         startPoint = new PointLong(x, y);
                     } else if (line.charAt((int) x) == '^') {
-                        splitters.put(new PointLong(x, y), false);
+                        splitters.add(new PointLong(x, y));
                     }
                 }
                 y++;
@@ -48,9 +46,12 @@ public class Day07 {
     }
 
     private static void solvePartOne() throws IOException {
-        Tuple2<PointLong, HashMap<PointLong, Boolean>> input = getInput();
+        Tuple2<PointLong, Set<PointLong>> input = getInput();
         PointLong startPoint = input.x();
-        HashMap<PointLong, Boolean> splitters = input.y();
+        HashMap<PointLong, Boolean> splitters = new HashMap<>();
+        for (PointLong splitter : input.y()) {
+            splitters.put(splitter, false);
+        }
         pewPewShootLaser(startPoint, splitters);
         long solution = splitters.values().stream().filter(x -> x).count();
         System.out.printf("The solution to part one is %s.%n", solution);
@@ -68,7 +69,26 @@ public class Day07 {
     }
 
     private static void solvePartTwo() throws IOException {
-        long solution = 0;
-        System.out.printf("The solution to part two is %s.%n", solution);
+        Tuple2<PointLong, Set<PointLong>> input = getInput();
+        PointLong startPoint = input.x();
+        Set<PointLong> splitters = input.y();
+        HashMap<PointLong, Long> splittersToTimelinesMap = new HashMap<>();
+        System.out.printf("The solution to part two is %s.%n", pewPewShootLaserPartTwo(startPoint, splitters, splittersToTimelinesMap));
+    }
+
+    private static long pewPewShootLaserPartTwo(PointLong startPoint, Set<PointLong> splitters, HashMap<PointLong, Long> splittersToTimelinesMap) {
+        Optional<PointLong> unusedSplitterBelow = splitters.stream()
+                .filter(s -> s.x() == startPoint.x() && s.y() > startPoint.y())
+                .min(Comparator.comparingLong(PointLong::y));
+        if (unusedSplitterBelow.isPresent()) {
+            if (splittersToTimelinesMap.containsKey(unusedSplitterBelow.get())) {
+                return splittersToTimelinesMap.get(unusedSplitterBelow.get());
+            }
+            long timelines =  pewPewShootLaserPartTwo(new PointLong(unusedSplitterBelow.get().x() - 1, unusedSplitterBelow.get().y()), splitters, splittersToTimelinesMap) +
+                    pewPewShootLaserPartTwo(new PointLong(unusedSplitterBelow.get().x() + 1, unusedSplitterBelow.get().y()), splitters, splittersToTimelinesMap);
+            splittersToTimelinesMap.put(unusedSplitterBelow.get(), timelines);
+            return timelines;
+        }
+        return 1;
     }
 }
