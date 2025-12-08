@@ -55,7 +55,7 @@ public class Day08 {
             PointLong3D junctionBox2 = input.get(distanceSquareOrderedByValues.get(i).y);
             connectJunctionBoxes(junctionBox1, junctionBox2, junctionBoxToNetworkMap);
         }
-        var groupedByCircuit = junctionBoxToNetworkMap
+        int[] groupedByCircuit = junctionBoxToNetworkMap
                 .entrySet().stream().collect(Collectors.groupingBy(Map.Entry::getValue))
                 .values().stream().map(List::size).sorted(Collections.reverseOrder()).mapToInt(Integer::valueOf).toArray();
         int solution = groupedByCircuit[0] * groupedByCircuit[1] * groupedByCircuit[2];
@@ -63,7 +63,31 @@ public class Day08 {
     }
 
     private static void solvePartTwo() throws IOException {
-        long solution = 0;
+        List<PointLong3D> input = getInput();
+        Map<Point, Long> coordsIndicesToDistanceSquaredMap = new HashMap<>();
+        for (int i = 0; i < input.size() - 1; i++) {
+            for (int j = i + 1; j < input.size(); j++) {
+                long distanceSquared = input.get(i).getSquareOfEuclideanDistance(input.get(j));
+                coordsIndicesToDistanceSquaredMap.put(new Point(i, j), distanceSquared);
+            }
+        }
+        List<Point> distanceSquareOrderedByValues = returnListOfEntriesSortedByValue(coordsIndicesToDistanceSquaredMap);
+        HashMap<PointLong3D, Integer> junctionBoxToNetworkMap = new HashMap<>();
+        int circuitCount;
+        int counter = 0;
+        long solution = -1;
+        do {
+            PointLong3D junctionBox1 = input.get(distanceSquareOrderedByValues.get(counter).x);
+            PointLong3D junctionBox2 = input.get(distanceSquareOrderedByValues.get(counter).y);
+            connectJunctionBoxes(junctionBox1, junctionBox2, junctionBoxToNetworkMap);
+            circuitCount = junctionBoxToNetworkMap
+                    .entrySet().stream().collect(Collectors.groupingBy(Map.Entry::getValue)).size();
+            counter++;
+            if (circuitCount == 1 && junctionBoxToNetworkMap.size() == input.size()) {
+                solution = junctionBox1.x() * junctionBox2.x();
+            }
+
+        } while (circuitCount > 1 || junctionBoxToNetworkMap.size() < input.size());
         System.out.printf("The solution to part two is %s.%n", solution);
     }
 
