@@ -1,5 +1,6 @@
 package org.aoc2025.day09;
 
+import org.aoc2025.utils.Direction;
 import org.aoc2025.utils.PointLong;
 
 import java.io.BufferedReader;
@@ -11,9 +12,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+import static org.aoc2025.utils.Utils.modulo;
+
 public class Day09 {
 
-    private static final String INPUT_FILE_NAME = "day09/example.txt";
+    private static final String INPUT_FILE_NAME = "day09/input.txt";
 
     private Day09() {
         throw new IllegalStateException("Utility class");
@@ -55,86 +58,84 @@ public class Day09 {
         Instant start = Instant.now();
         long solution = 0;
         List<PointLong> input = getInput();
-        Set<PointLong> paintedTiles = new HashSet<>();
-        PointLong tile = input.getFirst();
-        // Start at index 1 then wrap around
-        for (int i = 1; i <= input.size(); i++) {
+        Set<PointLong> rightTurnCorners = new HashSet<>();
+        PointLong tile = input.getLast();
+        Direction direction = null;
+        // Start at index 0 then wrap around back to 0
+        for (int i = 0; i <= input.size(); i++) {
             PointLong nextTile = input.get(i % input.size());
-            long lowX = Math.min(tile.x(), nextTile.x());
-            long highX = Math.max(tile.x(), nextTile.x());
-            long lowY = Math.min(tile.y(), nextTile.y());
-            long highY = Math.max(tile.y(), nextTile.y());
-            for (long x = lowX; x <= highX; x++) {
-                for (long y = lowY; y <= highY; y++) {
-                    // add outline of the shape to the hashset
-                    paintedTiles.add(new PointLong(x, y));
+            long xDiff = nextTile.x() - tile.x();
+            long yDiff = nextTile.y() - tile.y();
+            Direction nextDirection = Direction.valueOfCoord(new PointLong((xDiff) / Math.abs(xDiff == 0 ? 1 : xDiff), (yDiff) / Math.abs(yDiff == 0 ? 1 : yDiff)));
+            Direction turnDirection = null;
+            if (direction != null) {
+                turnDirection = Direction.valueOfIndex(
+                        modulo(nextDirection.index - direction.index + 1, 4)
+                );
+                if (turnDirection == Direction.RIGHT) {
+                    rightTurnCorners.add(tile);
+                } else if (turnDirection != Direction.LEFT) {
+                    throw new IllegalStateException("Non left/right turn");
                 }
             }
+            direction = nextDirection;
             tile = nextTile;
         }
-        // Then floodfill - should automate finding start point 'inside' the shape.
-        // Can count left/right turns and see which happens more, then orient from
-        // start point based on that
-        floodFill(paintedTiles, new PointLong(input.getFirst().x() + 1, input.getFirst().y() + 1));
-        // Then redo part 1 but checking outline of rectangle is within the fill
+        // For each pair of opposite corners/rectangle
         for (int i = 0; i < input.size() - 1; i++) {
             for (int j = i + 1; j < input.size(); j++) {
-                PointLong tileI = input.get(i);
-                PointLong tileJ = input.get(j);
-                long lowX = Math.min(tileI.x(), tileJ.x());
-                long highX = Math.max(tileI.x(), tileJ.x());
-                long lowY = Math.min(tileI.y(), tileJ.y());
-                long highY = Math.max(tileI.y(), tileJ.y());
-                boolean rectangleOutOfBounds = false;
-                for (long x = lowX; x <= highX; x++) {
-                    for (long y = lowY; y <= highY; y++) {
-                        // Check whole outline of rectangle are painted tiles
-                        if (!paintedTiles.contains(new PointLong(x, y))) {
-                            rectangleOutOfBounds = true;
-                            break;
-                        }
+                List<PointLong> corners = List.of(
+                        new PointLong(input.get(i).x(), input.get(i).y()),
+                        new PointLong(input.get(i).x(), input.get(j).y()),
+                        new PointLong(input.get(j).x(), input.get(j).y()),
+                        new PointLong(input.get(j).x(), input.get(i).y())
+                );
+                boolean outsideBoundary = false;
+                PointLong corner = corners.getLast();
+                for (int k = 0; k < corners.size(); k++) {
+                    PointLong nextCorner = corners.get(k);
+                    long x = corner.x();
+                    long xDiff = nextCorner.x() - corner.x();
+                    long y = corner.y();
+                    long yDiff = nextCorner.y() - corner.y();
+                    PointLong directionInner = new PointLong(xDiff / (xDiff == 0 ? 1 : Math.abs(xDiff)), (yDiff) / (yDiff == 0 ? 1 : Math.abs(yDiff)));
+                    x += directionInner.x();
+                    y += directionInner.y();
+                    Direction currentDirection = Direction.valueOfCoord(directionInner);
+                    if (directionInner.equals(new PointLong(0, 0))) {
+                        continue;
                     }
-                    if (rectangleOutOfBounds) {
+                    do {
+                        do {
+                            PointLong currentCoord = new PointLong(x, y);
+                            if (!currentCoord.equals(nextCorner) &&
+                                    rightTurnCorners.contains(currentCoord)
+                            ) {
+                                outsideBoundary = true;
+                            }
+                            y += directionInner.y();
+                        } while (y != nextCorner.y() && !outsideBoundary);
+                        x += directionInner.x();
+                    } while (x != nextCorner.x() && !outsideBoundary);
+                    if (outsideBoundary) {
                         break;
                     }
+                    corner = nextCorner;
                 }
-                if (!rectangleOutOfBounds) {
+
+                if (!outsideBoundary) {
                     solution = Math.max(solution,
-                            (Math.abs((tileI.x() - tileJ.x())) + 1) * (Math.abs((tileI.y() - tileJ.y())) + 1)
+                            (Math.abs((input.get(i).x() - input.get(j).x())) + 1) * (Math.abs((input.get(i).y() - input.get(j).y())) + 1)
                     );
                 }
             }
         }
+
+
         Instant finish = Instant.now();
         System.out.printf("The solution to part two is %s.%n", solution);
         long timeElapsed = Duration.between(start, finish).toMillis();
         DecimalFormat formatter = new DecimalFormat("#,###");
         System.out.printf("The solution to part two took %sms.%n", formatter.format(timeElapsed));
-    }
-
-    private static void floodFill(Set<PointLong> paintedTiles, PointLong startTile) {
-        var directions = List.of(
-                new PointLong(-1, 0),
-                new PointLong(0, -1),
-                new PointLong(1, 0),
-                new PointLong(0, 1)
-        );
-        Queue<PointLong> tilesToAdd = new ArrayDeque<>();
-        tilesToAdd.add(startTile);
-        paintedTiles.add(startTile);
-        while (!tilesToAdd.isEmpty()) {
-            PointLong currentTile = tilesToAdd.remove();
-//            if (paintedTiles.contains(currentTile)) {
-//                continue;
-//            }
-//            paintedTiles.add(currentTile);
-            for (PointLong direction : directions) {
-                PointLong nextTile = new PointLong(currentTile.x() + direction.x(), currentTile.y() + direction.y());
-                if (!paintedTiles.contains(nextTile) && !tilesToAdd.contains(nextTile)) {
-                    tilesToAdd.add(nextTile);
-                    paintedTiles.add(nextTile);
-                }
-            }
-        }
     }
 }
