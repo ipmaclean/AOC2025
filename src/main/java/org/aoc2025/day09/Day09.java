@@ -6,12 +6,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.DecimalFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 
 public class Day09 {
 
-    private static final String INPUT_FILE_NAME = "day09/input.txt";
+    private static final String INPUT_FILE_NAME = "day09/example.txt";
 
     private Day09() {
         throw new IllegalStateException("Utility class");
@@ -50,7 +52,89 @@ public class Day09 {
     }
 
     private static void solvePartTwo() throws IOException {
+        Instant start = Instant.now();
         long solution = 0;
+        List<PointLong> input = getInput();
+        Set<PointLong> paintedTiles = new HashSet<>();
+        PointLong tile = input.getFirst();
+        // Start at index 1 then wrap around
+        for (int i = 1; i <= input.size(); i++) {
+            PointLong nextTile = input.get(i % input.size());
+            long lowX = Math.min(tile.x(), nextTile.x());
+            long highX = Math.max(tile.x(), nextTile.x());
+            long lowY = Math.min(tile.y(), nextTile.y());
+            long highY = Math.max(tile.y(), nextTile.y());
+            for (long x = lowX; x <= highX; x++) {
+                for (long y = lowY; y <= highY; y++) {
+                    // add outline of the shape to the hashset
+                    paintedTiles.add(new PointLong(x, y));
+                }
+            }
+            tile = nextTile;
+        }
+        // Then floodfill - should automate finding start point 'inside' the shape.
+        // Can count left/right turns and see which happens more, then orient from
+        // start point based on that
+        floodFill(paintedTiles, new PointLong(input.getFirst().x() + 1, input.getFirst().y() + 1));
+        // Then redo part 1 but checking outline of rectangle is within the fill
+        for (int i = 0; i < input.size() - 1; i++) {
+            for (int j = i + 1; j < input.size(); j++) {
+                PointLong tileI = input.get(i);
+                PointLong tileJ = input.get(j);
+                long lowX = Math.min(tileI.x(), tileJ.x());
+                long highX = Math.max(tileI.x(), tileJ.x());
+                long lowY = Math.min(tileI.y(), tileJ.y());
+                long highY = Math.max(tileI.y(), tileJ.y());
+                boolean rectangleOutOfBounds = false;
+                for (long x = lowX; x <= highX; x++) {
+                    for (long y = lowY; y <= highY; y++) {
+                        // Check whole outline of rectangle are painted tiles
+                        if (!paintedTiles.contains(new PointLong(x, y))) {
+                            rectangleOutOfBounds = true;
+                            break;
+                        }
+                    }
+                    if (rectangleOutOfBounds) {
+                        break;
+                    }
+                }
+                if (!rectangleOutOfBounds) {
+                    solution = Math.max(solution,
+                            (Math.abs((tileI.x() - tileJ.x())) + 1) * (Math.abs((tileI.y() - tileJ.y())) + 1)
+                    );
+                }
+            }
+        }
+        Instant finish = Instant.now();
         System.out.printf("The solution to part two is %s.%n", solution);
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        DecimalFormat formatter = new DecimalFormat("#,###");
+        System.out.printf("The solution to part two took %sms.%n", formatter.format(timeElapsed));
+    }
+
+    private static void floodFill(Set<PointLong> paintedTiles, PointLong startTile) {
+        var directions = List.of(
+                new PointLong(-1, 0),
+                new PointLong(0, -1),
+                new PointLong(1, 0),
+                new PointLong(0, 1)
+        );
+        Queue<PointLong> tilesToAdd = new ArrayDeque<>();
+        tilesToAdd.add(startTile);
+        paintedTiles.add(startTile);
+        while (!tilesToAdd.isEmpty()) {
+            PointLong currentTile = tilesToAdd.remove();
+//            if (paintedTiles.contains(currentTile)) {
+//                continue;
+//            }
+//            paintedTiles.add(currentTile);
+            for (PointLong direction : directions) {
+                PointLong nextTile = new PointLong(currentTile.x() + direction.x(), currentTile.y() + direction.y());
+                if (!paintedTiles.contains(nextTile) && !tilesToAdd.contains(nextTile)) {
+                    tilesToAdd.add(nextTile);
+                    paintedTiles.add(nextTile);
+                }
+            }
+        }
     }
 }
