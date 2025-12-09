@@ -1,18 +1,13 @@
 package org.aoc2025.day09;
 
-import org.aoc2025.utils.Direction;
 import org.aoc2025.utils.PointLong;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.DecimalFormat;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-
-import static org.aoc2025.utils.Utils.modulo;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Day09 {
 
@@ -55,87 +50,49 @@ public class Day09 {
     }
 
     private static void solvePartTwo() throws IOException {
-        Instant start = Instant.now();
         long solution = 0;
         List<PointLong> input = getInput();
-        Set<PointLong> rightTurnCorners = new HashSet<>();
-        PointLong tile = input.getLast();
-        Direction direction = null;
-        // Start at index 0 then wrap around back to 0
-        for (int i = 0; i <= input.size(); i++) {
-            PointLong nextTile = input.get(i % input.size());
-            long xDiff = nextTile.x() - tile.x();
-            long yDiff = nextTile.y() - tile.y();
-            Direction nextDirection = Direction.valueOfCoord(new PointLong((xDiff) / Math.abs(xDiff == 0 ? 1 : xDiff), (yDiff) / Math.abs(yDiff == 0 ? 1 : yDiff)));
-            Direction turnDirection = null;
-            if (direction != null) {
-                turnDirection = Direction.valueOfIndex(
-                        modulo(nextDirection.index - direction.index + 1, 4)
-                );
-                if (turnDirection == Direction.RIGHT) {
-                    rightTurnCorners.add(tile);
-                } else if (turnDirection != Direction.LEFT) {
-                    throw new IllegalStateException("Non left/right turn");
-                }
-            }
-            direction = nextDirection;
-            tile = nextTile;
-        }
-        // For each pair of opposite corners/rectangle
         for (int i = 0; i < input.size() - 1; i++) {
             for (int j = i + 1; j < input.size(); j++) {
-                List<PointLong> corners = List.of(
-                        new PointLong(input.get(i).x(), input.get(i).y()),
-                        new PointLong(input.get(i).x(), input.get(j).y()),
-                        new PointLong(input.get(j).x(), input.get(j).y()),
-                        new PointLong(input.get(j).x(), input.get(i).y())
-                );
-                boolean outsideBoundary = false;
-                PointLong corner = corners.getLast();
-                for (int k = 0; k < corners.size(); k++) {
-                    PointLong nextCorner = corners.get(k);
-                    long x = corner.x();
-                    long xDiff = nextCorner.x() - corner.x();
-                    long y = corner.y();
-                    long yDiff = nextCorner.y() - corner.y();
-                    PointLong directionInner = new PointLong(xDiff / (xDiff == 0 ? 1 : Math.abs(xDiff)), (yDiff) / (yDiff == 0 ? 1 : Math.abs(yDiff)));
-                    x += directionInner.x();
-                    y += directionInner.y();
-                    Direction currentDirection = Direction.valueOfCoord(directionInner);
-                    if (directionInner.equals(new PointLong(0, 0))) {
-                        continue;
-                    }
-                    do {
-                        do {
-                            PointLong currentCoord = new PointLong(x, y);
-                            if (!currentCoord.equals(nextCorner) &&
-                                    rightTurnCorners.contains(currentCoord)
-                            ) {
-                                outsideBoundary = true;
-                            }
-                            y += directionInner.y();
-                        } while (y != nextCorner.y() && !outsideBoundary);
-                        x += directionInner.x();
-                    } while (x != nextCorner.x() && !outsideBoundary);
-                    if (outsideBoundary) {
+                PointLong corner1 = input.get(i);
+                PointLong corner2 = input.get(j);
+
+                PointLong tile = input.getLast();
+                boolean intersectsBoundary = false;
+                // Start at index 0 then wrap around back to 0
+                for (int k = 0; k <= input.size(); k++) {
+                    PointLong nextTile = input.get(k % input.size());
+                    if (rectangleIntersectsWithEdge(corner1, corner2, tile, nextTile)) {
+                        intersectsBoundary = true;
                         break;
                     }
-                    corner = nextCorner;
+                    tile = nextTile;
                 }
-
-                if (!outsideBoundary) {
+                if (!intersectsBoundary) {
                     solution = Math.max(solution,
                             (Math.abs((input.get(i).x() - input.get(j).x())) + 1) * (Math.abs((input.get(i).y() - input.get(j).y())) + 1)
                     );
                 }
             }
         }
-
-
-        Instant finish = Instant.now();
         System.out.printf("The solution to part two is %s.%n", solution);
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        DecimalFormat formatter = new DecimalFormat("#,###");
-        System.out.printf("The solution to part two took %sms.%n", formatter.format(timeElapsed));
+    }
+
+    private static boolean rectangleIntersectsWithEdge(PointLong corner1, PointLong corner2, PointLong tile, PointLong nextTile) {
+        long maxEdgeX = Math.max(tile.x(), nextTile.x());
+        long maxEdgeY = Math.max(tile.y(), nextTile.y());
+        long minEdgeX = Math.min(tile.x(), nextTile.x());
+        long minEdgeY = Math.min(tile.y(), nextTile.y());
+
+        long maxCornerX = Math.max(corner1.x(), corner2.x());
+        long maxCornerY = Math.max(corner1.y(), corner2.y());
+        long minCornerX = Math.min(corner1.x(), corner2.x());
+        long minCornerY = Math.min(corner1.y(), corner2.y());
+        // If the edge line segment lies outside or on the perimeter of the rectangle
+        if ((tile.x() == nextTile.x() && (tile.x() <= minCornerX || tile.x() >= maxCornerX || minEdgeY >= maxCornerY || maxEdgeY <= minCornerY)) ||
+                (tile.y() == nextTile.y() && (tile.y() <= minCornerY || tile.y() >= maxCornerY || minEdgeX >= maxCornerX || maxEdgeX <= minCornerX))) {
+            return false;
+        }
+        return true;
     }
 }
