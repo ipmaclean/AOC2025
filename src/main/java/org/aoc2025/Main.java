@@ -1,11 +1,11 @@
 package org.aoc2025;
 
-import org.aoc2025.day09.Day09;
+import org.aoc2025.day11.Day11;
 
 import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        Day09.solve();
+        Day11.solve();
     }
 }
