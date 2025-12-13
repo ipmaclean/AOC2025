@@ -1,12 +1,19 @@
 package org.aoc2025.day10;
 
-import org.apache.commons.lang3.StringUtils;
+import org.chocosolver.solver.Model;
+import org.chocosolver.solver.Solution;
+import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.variables.IntVar;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.text.DecimalFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.aoc2025.utils.Utils.findCombinationsOfSizeR;
 
@@ -62,57 +69,50 @@ public class Day10 {
     }
 
     private static void solvePartTwo() throws IOException {
+        Instant start = Instant.now();
         long solution = 0;
         List<MachineManualLine> machineManual = getInput();
+        int counter = 1;
         for (MachineManualLine machineManualLine : machineManual) {
-            solution += getMinimumButtonPressesForJoltages(machineManualLine);
+            System.out.printf("Solving input line %s. ",  counter++);
+            Instant startLine = Instant.now();
+            long solutionForLine = getMinimumButtonPressesForJoltages(machineManualLine);
+            solution += solutionForLine;
+            Instant finish = Instant.now();
+            long timeElapsed = Duration.between(startLine, finish).toMillis();
+            DecimalFormat formatter = new DecimalFormat("#,###");
+            System.out.printf("Solved in %sms. Solution for line %s.%n",  formatter.format(timeElapsed), formatter.format(solutionForLine));
         }
+        Instant finish = Instant.now();
+        // 20617 too high
         System.out.printf("The solution to part two is %s.%n", solution);
+
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        DecimalFormat formatter = new DecimalFormat("#,###");
+        System.out.printf("The solution to part two took %sms.%n", formatter.format(timeElapsed));
     }
 
     private static long getMinimumButtonPressesForJoltages(MachineManualLine machineManualLine) {
-        Queue<Day10PuzzleState> statesToCheck = new ArrayDeque<>();
-        HashSet<Day10PuzzleState> visitedStates = new HashSet<>();
+        int[][] matrix = machineManualLine.getTransposedMatrixWiringSchematics();
+        List<Integer> joltages = machineManualLine.getJoltageRequirements();
 
-        statesToCheck.add(new Day10PuzzleState(
-                new ArrayList<>(Collections.nCopies(machineManualLine.getWiringSchematics().size(), 0)),
-                new ArrayList<>(Collections.nCopies(machineManualLine.getJoltageRequirements().size(), 0))
-        ));
+        Model model = new Model();
+        IntVar[] xs = model.intVarArray("xs", machineManualLine.getWiringSchematics().size(), 0, 1000, false);
 
-        while (!statesToCheck.isEmpty()) {
-            Day10PuzzleState currentState = statesToCheck.remove();
-
-            for (int i = 0; i < machineManualLine.getWiringSchematics().size(); i++) {
-                List<Integer> nextButtonPress = new ArrayList<>(currentState.buttonPresses());
-                List<Integer> nextJoltages = new ArrayList<>(currentState.joltages());
-
-                nextButtonPress.set(i, nextButtonPress.get(i) + 1);
-                nextJoltages = pressButton(machineManualLine.getWiringSchematics().get(i), nextJoltages);
-                if (machineManualLine.anyGreaterThanJoltageRequirements(nextJoltages)) {
-                    continue;
+        for (int i = 0; i < matrix.length; i++) {
+            List<IntVar> variablesToSum = new ArrayList<>();
+            for (int j = 0; j < matrix[i].length; j++) {
+                if (matrix[i][j] == 1) {
+                    variablesToSum.add(xs[j]);
                 }
-                if (machineManualLine.matchesJoltageRequirements(nextJoltages)) {
-                    return nextButtonPress.stream().mapToInt(Integer::valueOf).sum();
-                }
-                Day10PuzzleState nextPuzzleState = new Day10PuzzleState(nextButtonPress, nextJoltages);
-                if (visitedStates.contains(nextPuzzleState)) {
-                    continue;
-                }
-                statesToCheck.add(nextPuzzleState);
-                visitedStates.add(nextPuzzleState);
             }
+            model.sum(variablesToSum.toArray(new IntVar[0]), "=", joltages.get(i)).post();
         }
-        throw new IllegalStateException("Did not find combinations of buttons to configure the joltages correctly.");
-    }
+        IntVar sum = model.intVar("sum", 0, 2000, false);
+        model.sum(xs, "=", sum).post();
 
-    private static List<Integer> pressButton(int button, List<Integer> joltages) {
-        List<Integer> localJoltages = new ArrayList<>(joltages);
-        String buttonAsBinaryString = StringUtils.leftPad(Integer.toBinaryString(button), joltages.size(), '0');
-        for (int i = 0; i < buttonAsBinaryString.length(); i++) {
-            if (buttonAsBinaryString.charAt(i) == '1') {
-                localJoltages.set(i, localJoltages.get(i) + 1);
-            }
-        }
-        return localJoltages;
+        Solver solver = model.getSolver();
+        Solution solution = solver.findOptimalSolution(sum, Model.MINIMIZE);
+        return solution.getIntVal(sum);
     }
 }

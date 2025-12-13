@@ -1,9 +1,10 @@
 package org.aoc2025.day10;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public class MachineManualLine {
 
@@ -38,31 +39,21 @@ public class MachineManualLine {
         return wiringSchematics;
     }
 
+    public int[][] getTransposedMatrixWiringSchematics() {
+        List<String> wiringSchematicsStrings = new ArrayList<>();
+        for (int schematic : wiringSchematics) {
+            wiringSchematicsStrings.add(StringUtils.leftPad(Integer.toBinaryString(schematic), joltageRequirements.size(), '0'));
+        }
+        int[][] transposed = new int[joltageRequirements.size()][wiringSchematics.size()];
+        for (int i = 0; i < joltageRequirements.size(); i++) {
+            for (int j = 0; j < wiringSchematicsStrings.size(); j++) {
+                transposed[i][j] = wiringSchematicsStrings.get(j).charAt(i) - '0';
+            }
+        }
+        return transposed;
+    }
+
     public List<Integer> getJoltageRequirements() {
         return joltageRequirements;
-    }
-
-    public boolean anyGreaterThanJoltageRequirements(List<Integer> joltages) {
-        if (joltages.size() != joltageRequirements.size()) {
-            throw new IllegalArgumentException("Wrong size list for joltages");
-        }
-        for (int i = 0; i < joltageRequirements.size(); i++) {
-            if (joltages.get(i) > joltageRequirements.get(i)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean matchesJoltageRequirements(List<Integer> joltages) {
-        if (joltages.size() != joltageRequirements.size()) {
-            throw new IllegalArgumentException("Wrong size list for joltages");
-        }
-        for (int i = 0; i < joltageRequirements.size(); i++) {
-            if (!Objects.equals(joltages.get(i), joltageRequirements.get(i))) {
-                return false;
-            }
-        }
-        return true;
     }
 }
