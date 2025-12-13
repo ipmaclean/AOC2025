@@ -21,9 +21,9 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.choco-solver</groupId>
-            <artifactId>choco-solver</artifactId>
-            <version>4.10.18</version>
+            <groupId>com.google.ortools</groupId>
+            <artifactId>ortools-java</artifactId>
+            <version>9.14.6206</version>
         </dependency>
     </dependencies>
 

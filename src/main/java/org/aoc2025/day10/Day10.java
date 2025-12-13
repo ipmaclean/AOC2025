@@ -1,19 +1,18 @@
 package org.aoc2025.day10;
 
-import org.chocosolver.solver.Model;
-import org.chocosolver.solver.Solution;
-import org.chocosolver.solver.Solver;
-import org.chocosolver.solver.variables.IntVar;
+import com.google.ortools.Loader;
+import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPObjective;
+import com.google.ortools.linearsolver.MPSolver;
+import com.google.ortools.linearsolver.MPVariable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.DecimalFormat;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.aoc2025.utils.Utils.findCombinationsOfSizeR;
 
@@ -69,50 +68,46 @@ public class Day10 {
     }
 
     private static void solvePartTwo() throws IOException {
-        Instant start = Instant.now();
+        Loader.loadNativeLibraries();
         long solution = 0;
         List<MachineManualLine> machineManual = getInput();
-        int counter = 1;
         for (MachineManualLine machineManualLine : machineManual) {
-            System.out.printf("Solving input line %s. ",  counter++);
-            Instant startLine = Instant.now();
-            long solutionForLine = getMinimumButtonPressesForJoltages(machineManualLine);
-            solution += solutionForLine;
-            Instant finish = Instant.now();
-            long timeElapsed = Duration.between(startLine, finish).toMillis();
-            DecimalFormat formatter = new DecimalFormat("#,###");
-            System.out.printf("Solved in %sms. Solution for line %s.%n",  formatter.format(timeElapsed), formatter.format(solutionForLine));
+            solution += getMinimumButtonPressesForJoltages(machineManualLine);
         }
-        Instant finish = Instant.now();
-        // 20617 too high
         System.out.printf("The solution to part two is %s.%n", solution);
-
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        DecimalFormat formatter = new DecimalFormat("#,###");
-        System.out.printf("The solution to part two took %sms.%n", formatter.format(timeElapsed));
     }
 
     private static long getMinimumButtonPressesForJoltages(MachineManualLine machineManualLine) {
+        MPSolver solver = MPSolver.createSolver("SCIP");
+        if (solver == null) {
+            throw new RuntimeException("SCIP solver unavailable.");
+        }
+
+        MPVariable[] xs = IntStream.range(0, machineManualLine.getWiringSchematics().size())
+                .mapToObj(i -> solver.makeIntVar(0, MPSolver.infinity(), "x_" + i))
+                .toArray(MPVariable[]::new);
+
         int[][] matrix = machineManualLine.getTransposedMatrixWiringSchematics();
         List<Integer> joltages = machineManualLine.getJoltageRequirements();
-
-        Model model = new Model();
-        IntVar[] xs = model.intVarArray("xs", machineManualLine.getWiringSchematics().size(), 0, 1000, false);
-
-        for (int i = 0; i < matrix.length; i++) {
-            List<IntVar> variablesToSum = new ArrayList<>();
-            for (int j = 0; j < matrix[i].length; j++) {
+        for (int i = 0; i < joltages.size(); i++) {
+            MPConstraint constraint = solver.makeConstraint(joltages.get(i), joltages.get(i), "c_" + i);
+            for (int j = 0; j < machineManualLine.getWiringSchematics().size(); j++) {
                 if (matrix[i][j] == 1) {
-                    variablesToSum.add(xs[j]);
+                    constraint.setCoefficient(xs[j], 1);
                 }
             }
-            model.sum(variablesToSum.toArray(new IntVar[0]), "=", joltages.get(i)).post();
         }
-        IntVar sum = model.intVar("sum", 0, 2000, false);
-        model.sum(xs, "=", sum).post();
 
-        Solver solver = model.getSolver();
-        Solution solution = solver.findOptimalSolution(sum, Model.MINIMIZE);
-        return solution.getIntVal(sum);
+        MPObjective objective = solver.objective();
+        for (MPVariable x : xs) {
+            objective.setCoefficient(x, 1);
+        }
+        objective.setMinimization();
+
+        final MPSolver.ResultStatus resultStatus = solver.solve();
+        if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
+            return (long)objective.value();
+        }
+        throw new IllegalStateException("No optimal solution found");
     }
 }
