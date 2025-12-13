@@ -1,6 +1,8 @@
 package org.aoc2025.utils;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Utils {
@@ -24,5 +26,29 @@ public class Utils {
             }
         }
         return factors;
+    }
+
+    public static <T> List<List<T>> findCombinationsOfSizeR(List<T> values, int r) {
+        List<List<T>> result = new ArrayList<>();
+        // To store current combination
+        List<T> data = new ArrayList<>();
+        combinationUtil(0, r, data, result, values);
+        return result;
+    }
+
+    private static <T> void combinationUtil(int ind, int r, List<T> data, List<List<T>> result, List<T> values) {
+        int n = values.size();
+        // If size of current combination is r
+        if (data.size() == r) {
+            result.add(new ArrayList<>(data));
+            return;
+        }
+
+        for (int i = ind; i < n; i++) {
+            data.add(values.get(i));
+            combinationUtil(i + 1, r, data, result, values);
+            // Backtrack to find other combinations
+            data.removeLast();
+        }
     }
 }
