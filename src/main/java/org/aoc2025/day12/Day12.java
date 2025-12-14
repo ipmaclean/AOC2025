@@ -1,5 +1,7 @@
 package org.aoc2025.day12;
 
+import org.aoc2025.utils.tuple.Tuple2;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,34 +24,65 @@ public class Day12 {
         solvePartOne();
     }
 
-    private static List<PresentInstructions> getInput() throws IOException {
+    private static Tuple2<List<Present>, List<PresentInstructions>> getInput() throws IOException {
         InputStream inputStream = Day12.class.getClassLoader().getResourceAsStream(INPUT_FILE_NAME);
+        List<Present> presents = new ArrayList<>();
         List<PresentInstructions> presentInstructions = new ArrayList<>();
-        Pattern pattern = Pattern.compile("^\\d+x\\d");
+        Pattern presentPattern = Pattern.compile("^\\d:");
+        Pattern presentInstructionsPattern = Pattern.compile("^\\d+x\\d");
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                Matcher matcher = pattern.matcher(line);
-                if (!matcher.find()) {
-                    continue;
+                Matcher presentPatternMatcher = presentPattern.matcher(line);
+                Matcher presentInstructionsMatcher = presentInstructionsPattern.matcher(line);
+
+
+                if (presentPatternMatcher.find()) {
+                    List<String> present = new ArrayList<>();
+                    while (!(line = reader.readLine()).isEmpty()) {
+                        present.add(line);
+                    }
+                    presents.add(new Present(present));
                 }
-                presentInstructions.add(new PresentInstructions(line));
+                if (presentInstructionsMatcher.find()) {
+                    presentInstructions.add(new PresentInstructions(line));
+                }
             }
         }
-        return presentInstructions;
+        return new Tuple2<>(presents, presentInstructions);
     }
 
     private static void solvePartOne() throws IOException {
         long solution = 0;
-        List<PresentInstructions> presentInstructions = getInput();
+        Tuple2<List<Present>, List<PresentInstructions>> input = getInput();
+        List<Present> presents = input.x();
+        List<PresentInstructions> presentInstructions = input.y();
+
         for (PresentInstructions presentInstruction : presentInstructions) {
-            long gridArea = presentInstruction.getRegionDimensions().x() * presentInstruction.getRegionDimensions().y();
-            long shapeCount = Arrays.stream(presentInstruction.getPresentCounts()).sum();
-            if (shapeCount * 9 <= gridArea) {
+            // If definitely does not fit - short circuit
+            // else:
+            // Fits trivially - all presents would fit if they were a 3x3 square OR
+            // Fits with non-trivial solution
+            if (!(cannotFitOnGrid(presentInstruction, presents)) &&
+                    ((presentInstruction.getRegionDimensions().x() / 3) * (presentInstruction.getRegionDimensions().y() / 3) >= Arrays.stream(presentInstruction.getPresentCounts()).sum() || canBinPack(presentInstruction, presents))) {
                 solution++;
             }
         }
         System.out.printf("The solution to part one is %s.%n", solution);
+    }
+
+    private static boolean canBinPack(PresentInstructions presentInstruction, List<Present> presents) {
+        // Really difficult!
+        throw new UnsupportedOperationException("Not yet implemented.");
+    }
+
+    private static boolean cannotFitOnGrid(PresentInstructions presentInstruction, List<Present> presents) {
+        long gridArea = presentInstruction.getRegionDimensions().x() * presentInstruction.getRegionDimensions().y();
+        long presentsArea = 0;
+        for (int i = 0; i < presentInstruction.getPresentCounts().length; i++) {
+            presentsArea += presentInstruction.getPresentCounts()[i] * presents.get(i).getArea();
+        }
+        return presentsArea > gridArea;
     }
 }
